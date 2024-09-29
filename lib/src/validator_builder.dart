@@ -3,12 +3,17 @@ import 'locale.dart';
 import 'validator_options.dart';
 
 typedef StringValidationCallback = String? Function(String? value);
+typedef ValidationCallback<T> = String? Function(T? value);
 
 // C# Action<T>
 typedef Action<T> = Function(T builder);
 
-class ValidationBuilder {
-  ValidationBuilder({
+// For backwards compatibility
+typedef ValidationBuilder = GenericBaseValidationBuilder<String>;
+typedef StringValidationBuilder = GenericBaseValidationBuilder<String>;
+
+class GenericBaseValidationBuilder<T> {
+  GenericBaseValidationBuilder({
     this.optional = false,
     this.requiredMessage,
     ValidatorOptions? options,
@@ -34,12 +39,12 @@ class ValidationBuilder {
   final bool optional;
   final String? requiredMessage;
   final FormValidatorLocale _locale;
-  final List<StringValidationCallback> validations = [];
+  final List<ValidationCallback<T>> validations = [];
   final ValidatorOptions _options;
 
   /// Clears validation list and adds required validation if
   /// [optional] is false
-  ValidationBuilder reset() {
+  GenericBaseValidationBuilder<T> reset() {
     validations.clear();
     if (optional != true) {
       required(requiredMessage);
@@ -48,16 +53,16 @@ class ValidationBuilder {
   }
 
   /// Adds new item to [validations] list, returns this instance
-  ValidationBuilder add(StringValidationCallback validator) {
+  GenericBaseValidationBuilder<T> add(ValidationCallback<T> validator) {
     validations.add(validator);
     return this;
   }
 
   /// Tests [value] against defined [validations]
-  String? test(String? value) {
+  String? test(T? value) {
     for (var validate in validations) {
       // Return null if field is optional and value is null
-      if (optional && (value == null || value.isEmpty)) {
+      if (optional && (value == null || (value is String && value.isEmpty))) {
         return null;
       }
 
@@ -71,20 +76,20 @@ class ValidationBuilder {
   }
 
   /// Returns a validator function for FormInput
-  StringValidationCallback build() => test;
+  ValidationCallback<T> build() => test;
 
   /// Throws error only if [left] and [right] validators throw error same time.
   /// If [reverse] is true left builder's error will be displayed otherwise
   /// right builder's error. Because this is default behaviour on most of the
   /// programming languages.
-  ValidationBuilder or(
-    Action<ValidationBuilder> left,
-    Action<ValidationBuilder> right, {
+  GenericBaseValidationBuilder<T> or(
+    Action<GenericBaseValidationBuilder<T>> left,
+    Action<GenericBaseValidationBuilder<T>> right, {
     bool reverse = false,
   }) {
     // Create
-    final v1 = ValidationBuilder(locale: _locale);
-    final v2 = ValidationBuilder(locale: _locale);
+    final v1 = GenericBaseValidationBuilder<T>(locale: _locale);
+    final v2 = GenericBaseValidationBuilder<T>(locale: _locale);
 
     // Configure
     left(v1);
@@ -109,31 +114,35 @@ class ValidationBuilder {
   }
 
   /// Value must not be null
-  ValidationBuilder required([String? message]) =>
-      add((v) => v == null || v.isEmpty ? message ?? _locale.required() : null);
+  GenericBaseValidationBuilder required([String? message]) =>
+      add((v) => v == null || (v is String && v.isEmpty)
+          ? message ?? _locale.required()
+          : null);
+}
 
+extension StringValidationBuilderExt on GenericBaseValidationBuilder<String> {
   /// Checks if two values match
-  ValidationBuilder match(String? otherValue, [String? message]) =>
+  StringValidationBuilder match(String? otherValue, [String? message]) =>
       add((v) => v == otherValue ? null : message ?? _locale.noMatch());
 
   /// Value length must be greater than or equal to [minLength]
-  ValidationBuilder minLength(int minLength, [String? message]) =>
+  StringValidationBuilder minLength(int minLength, [String? message]) =>
       add((v) => v!.length < minLength
           ? message ?? _locale.minLength(v, minLength)
           : null);
 
   /// Value length must be less than or equal to [maxLength]
-  ValidationBuilder maxLength(int maxLength, [String? message]) =>
+  StringValidationBuilder maxLength(int maxLength, [String? message]) =>
       add((v) => v!.length > maxLength
           ? message ?? _locale.maxLength(v, maxLength)
           : null);
 
   /// Value must match [regExp]
-  ValidationBuilder regExp(RegExp regExp, String message) =>
+  StringValidationBuilder regExp(RegExp regExp, String message) =>
       add((v) => regExp.hasMatch(v!) ? null : message);
 
   /// Value must be a well formatted email
-  ValidationBuilder email([String? message]) => add((v) =>
+  StringValidationBuilder email([String? message]) => add((v) =>
       _options.emailRegExp.hasMatch(v!) ? null : message ?? _locale.email(v));
 
   // needed for short circuiting the full validation
@@ -141,21 +150,21 @@ class ValidationBuilder {
   static final RegExp _nonDigitsExp = RegExp(r'[^\d]');
 
   /// Value must be a well formatted phone number
-  ValidationBuilder phone([String? message]) =>
+  StringValidationBuilder phone([String? message]) =>
       add((v) => !_anyLetter.hasMatch(v!) &&
               _options.phoneRegExp.hasMatch(v.replaceAll(_nonDigitsExp, ''))
           ? null
           : message ?? _locale.phoneNumber(v));
 
   /// Value must be a well formatted IPv4 address
-  ValidationBuilder ip([String? message]) => add((v) =>
+  StringValidationBuilder ip([String? message]) => add((v) =>
       _options.ipv4RegExp.hasMatch(v!) ? null : message ?? _locale.ip(v));
 
   /// Value must be a well formatted IPv6 address
-  ValidationBuilder ipv6([String? message]) => add((v) =>
+  StringValidationBuilder ipv6([String? message]) => add((v) =>
       _options.ipv6RegExp.hasMatch(v!) ? null : message ?? _locale.ipv6(v));
 
   /// Value must be a well formatted URL address
-  ValidationBuilder url([String? message]) => add((v) =>
+  StringValidationBuilder url([String? message]) => add((v) =>
       _options.urlRegExp.hasMatch(v!) ? null : message ?? _locale.url(v));
 }
