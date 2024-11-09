@@ -4,7 +4,7 @@ export 'src/locale.dart';
 export 'src/validator_builder.dart'
     show
         ValidationBuilder,
-        GenericBaseValidationBuilder,
+        GenericValidationBuilder,
         StringValidationCallback,
         ValidationCallback,
         StringValidationBuilderExt;

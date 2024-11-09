@@ -9,11 +9,11 @@ typedef ValidationCallback<T> = String? Function(T? value);
 typedef Action<T> = Function(T builder);
 
 // For backwards compatibility
-typedef ValidationBuilder = GenericBaseValidationBuilder<String>;
-typedef StringValidationBuilder = GenericBaseValidationBuilder<String>;
+typedef ValidationBuilder = GenericValidationBuilder<String>;
+typedef StringValidationBuilder = GenericValidationBuilder<String>;
 
-class GenericBaseValidationBuilder<T> {
-  GenericBaseValidationBuilder({
+class GenericValidationBuilder<T> {
+  GenericValidationBuilder({
     this.optional = false,
     this.requiredMessage,
     ValidatorOptions? options,
@@ -44,7 +44,7 @@ class GenericBaseValidationBuilder<T> {
 
   /// Clears validation list and adds required validation if
   /// [optional] is false
-  GenericBaseValidationBuilder<T> reset() {
+  GenericValidationBuilder<T> reset() {
     validations.clear();
     if (optional != true) {
       required(requiredMessage);
@@ -53,7 +53,7 @@ class GenericBaseValidationBuilder<T> {
   }
 
   /// Adds new item to [validations] list, returns this instance
-  GenericBaseValidationBuilder<T> add(ValidationCallback<T> validator) {
+  GenericValidationBuilder<T> add(ValidationCallback<T> validator) {
     validations.add(validator);
     return this;
   }
@@ -82,14 +82,14 @@ class GenericBaseValidationBuilder<T> {
   /// If [reverse] is true left builder's error will be displayed otherwise
   /// right builder's error. Because this is default behaviour on most of the
   /// programming languages.
-  GenericBaseValidationBuilder<T> or(
-    Action<GenericBaseValidationBuilder<T>> left,
-    Action<GenericBaseValidationBuilder<T>> right, {
+  GenericValidationBuilder<T> or(
+    Action<GenericValidationBuilder<T>> left,
+    Action<GenericValidationBuilder<T>> right, {
     bool reverse = false,
   }) {
     // Create
-    final v1 = GenericBaseValidationBuilder<T>(locale: _locale);
-    final v2 = GenericBaseValidationBuilder<T>(locale: _locale);
+    final v1 = GenericValidationBuilder<T>(locale: _locale);
+    final v2 = GenericValidationBuilder<T>(locale: _locale);
 
     // Configure
     left(v1);
@@ -114,13 +114,13 @@ class GenericBaseValidationBuilder<T> {
   }
 
   /// Value must not be null
-  GenericBaseValidationBuilder required([String? message]) =>
+  GenericValidationBuilder required([String? message]) =>
       add((v) => v == null || (v is String && v.isEmpty)
           ? message ?? _locale.required()
           : null);
 }
 
-extension StringValidationBuilderExt on GenericBaseValidationBuilder<String> {
+extension StringValidationBuilderExt on GenericValidationBuilder<String> {
   /// Checks if two values match
   StringValidationBuilder match(String? otherValue, [String? message]) =>
       add((v) => v == otherValue ? null : message ?? _locale.noMatch());
